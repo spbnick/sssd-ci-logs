@@ -22,7 +22,7 @@ if ! [[ $HOST =~ ^[a-z0-9_-]+$ ]]; then
     exit 1
 fi
 
-declare -r JOB_SFX="job/$((JOB / 100))/$((JOB % 100))"
+declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
 declare -r SFX="commit/${HASH:0:2}/${HASH:2}"
 declare -r JOB_DIR="/srv/ci/logs/$JOB_SFX"
 declare -r DIR="/srv/ci/logs/$SFX"

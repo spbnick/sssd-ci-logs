@@ -43,7 +43,7 @@ if [[ $URL_PFX == *[[:cntrl:]]* ]]; then
 fi
 
 declare -r DIR_PFX="/srv/ci/logs/"
-declare -r JOB_SFX="job/$((JOB / 100))/$((JOB % 100))"
+declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
 declare -r JOB_DIR="$DIR_PFX$JOB_SFX"
 declare -r JOB_URL="$URL_PFX$JOB_SFX"
 declare -r JOB_SUMMARY_TXT="$JOB_DIR/summary.txt"
