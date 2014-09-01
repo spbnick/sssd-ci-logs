@@ -3,21 +3,21 @@
 set -e -u -o pipefail -o noclobber
 shopt -s shift_verbose
 
-declare -r COMMIT_HASH="$1";    shift
-declare -r COMMIT_SUBJECT="$1"; shift
+declare -r HASH="$1";           shift
+declare -r SUBJECT="$1";        shift
 declare -r JOB="$1";            shift
 declare -r TESTS="$1";          shift
 declare -r HOST_LIST="$1";      shift
 declare -r URL_PFX="$1";        shift
 
-if ! [[ $COMMIT_HASH =~ ^[0-9a-f]{40}$ ]]; then
-    echo "Invalid commit hash: $COMMIT_HASH" >&2
+if ! [[ $HASH =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Invalid commit hash: $HASH" >&2
     exit 1
 fi
 
-if [[ $COMMIT_SUBJECT == *[[:cntrl:]]* ]]; then
+if [[ $SUBJECT == *[[:cntrl:]]* ]]; then
     printf "Commit subject contains control characters: %q\n" \
-           "$COMMIT_SUBJECT" >&2
+           "$SUBJECT" >&2
     exit 1
 fi
 
@@ -46,45 +46,58 @@ declare -r DIR_PFX="/srv/ci/logs/"
 declare -r JOB_SFX="job/$((JOB / 100))/$((JOB % 100))"
 declare -r JOB_DIR="$DIR_PFX$JOB_SFX"
 declare -r JOB_URL="$URL_PFX$JOB_SFX"
-declare -r JOB_SUMMARY_FILE="$JOB_DIR/summary.html"
+declare -r JOB_SUMMARY_TXT="$JOB_DIR/summary.txt"
+declare -r JOB_SUMMARY_HTML="$JOB_DIR/summary.html"
 
-{
-    declare host_name
-    declare host_dir
-    declare host_url
-    declare text_log
-    declare host_summary_url
-    declare host_result
-    declare result="PASSED"
-    declare host_label="Hosts:"
+declare host_name
+declare host_dir
+declare host_url
+declare host_summary_log
+declare host_summary_html
+declare host_summary_url
+declare host_result
+declare host_title
+declare host_label="Hosts:"
+declare result="PASSED"
 
-    cat <<EOF
-Subject:    $COMMIT_SUBJECT
-Hash:       $COMMIT_HASH
+cat >|"$JOB_SUMMARY_TXT" <<EOF
+Subject:    $SUBJECT
+Hash:       $HASH
 Job:        $JOB
 Tests:      $TESTS
 EOF
-    # NOTE: HOST_LIST is validated above
-    for host_name in $HOST_LIST; do
-        host_dir="$JOB_DIR/$host_name"
-        host_url="$JOB_URL/$host_name"
-        text_log="$host_dir/ci.log"
-        if [ -e "$text_log" ]; then
-            host_summary_url="$host_url/ci.html"
-            if [[ `tail -n1 "$text_log"` == SUCCESS ]]; then
-                host_result="passed"
-            else
-                host_result="failed"
-                result="FAILED"
-            fi
+
+# NOTE: HOST_LIST is validated above
+for host_name in $HOST_LIST; do
+    host_dir="$JOB_DIR/$host_name"
+    host_url="$JOB_URL/$host_name"
+    host_summary_log="$host_dir/ci.log"
+    host_summary_html="$host_dir/ci.html"
+    if [ -e "$host_summary_log" ]; then
+        if [[ `tail -n1 "$host_summary_log"` == SUCCESS ]]; then
+            host_result="passed"
         else
-            host_summary_url=""
-            host_result="missing"
+            host_result="failed"
             result="FAILED"
         fi
-        printf '%-11s %-15s %-7s %s\n' \
-               "$host_label" "$host_name" "$host_result" "$host_summary_url"
-        host_label=""
-    done
-    printf '%-27s %-7s\n' "Overall:" "$result"
-} | tee >(sssd-ci-logs-tohtml >|"$JOB_SUMMARY_FILE")
+        host_title="$host_name: $host_result: ${HASH:0:8} $SUBJECT"
+        sssd-ci-logs-tohtml "$host_title" \
+                            < "$host_summary_log" > "$host_summary_html"
+        host_summary_url="$host_url/ci.html"
+    else
+        host_summary_url=""
+        host_result="missing"
+        result="FAILED"
+    fi
+    printf '%-11s %-15s %-7s %s\n' \
+           "$host_label" "$host_name" "$host_result" "$host_summary_url" \
+           >>"$JOB_SUMMARY_TXT"
+    host_label=""
+done
+
+printf '%-27s %-7s\n' "Overall:" "$result" >>"$JOB_SUMMARY_TXT"
+
+cat "$JOB_SUMMARY_TXT"
+
+sssd-ci-logs-tohtml "$result: ${HASH:0:8} $SUBJECT" \
+                    <"$JOB_SUMMARY_TXT" >|"$JOB_SUMMARY_HTML"

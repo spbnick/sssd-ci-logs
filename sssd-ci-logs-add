@@ -3,12 +3,12 @@
 set -e -u -o pipefail -o noclobber
 shopt -s shift_verbose
 
-declare -r COMMIT_HASH="$1"; shift
+declare -r HASH="$1"; shift
 declare -r JOB="$1";    shift
 declare -r HOST="$1";   shift
 
-if ! [[ $COMMIT_HASH =~ ^[0-9a-f]{40}$ ]]; then
-    echo "Invalid commit hash: $COMMIT_HASH" >&2
+if ! [[ $HASH =~ ^[0-9a-f]{40}$ ]]; then
+    echo "Invalid commit hash: $HASH" >&2
     exit 1
 fi
 
@@ -23,18 +23,13 @@ if ! [[ $HOST =~ ^[a-z0-9_-]+$ ]]; then
 fi
 
 declare -r JOB_SFX="job/$((JOB / 100))/$((JOB % 100))"
-declare -r COMMIT_SFX="commit/${COMMIT_HASH:0:2}/${COMMIT_HASH:2}"
+declare -r SFX="commit/${HASH:0:2}/${HASH:2}"
 declare -r JOB_DIR="/srv/ci/logs/$JOB_SFX"
-declare -r COMMIT_DIR="/srv/ci/logs/$COMMIT_SFX"
+declare -r DIR="/srv/ci/logs/$SFX"
 declare -r JOB_LINK="../../../$JOB_SFX"
 declare -r HOST_DIR="$JOB_DIR/$HOST"
-declare -r TEXT_LOG="$HOST_DIR/ci.log"
-declare -r HTML_LOG="$HOST_DIR/ci.html"
 
 mkdir -p "$HOST_DIR"
-mkdir -p "$COMMIT_DIR"
-ln -snf "$JOB_LINK" "$COMMIT_DIR/$JOB"
+mkdir -p "$DIR"
+ln -snf "$JOB_LINK" "$DIR/$JOB"
 tar xzmC "$HOST_DIR"
-if [ -e "$TEXT_LOG" ]; then
-    sssd-ci-logs-tohtml < "$TEXT_LOG" > "$HTML_LOG"
-fi
