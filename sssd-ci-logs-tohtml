@@ -1,0 +1,43 @@
+#!/bin/perl
+
+use strict;
+use warnings;
+use HTML::Entities;
+
+my $title;
+my $esc_title;
+
+if (scalar(@ARGV) > 1) {
+    printf STDERR "Invalid number of arguments.\n";
+    printf STDERR "Usage: %s [TITLE]\n", pop([split(/\//, $0)]);
+    exit(1);
+} elsif (scalar(@ARGV) == 1) {
+    $title = $ARGV[0];
+} else {
+    $title = "";
+}
+
+$esc_title = encode_entities($title);
+
+print <<EOF;
+<!DOCTYPE html>
+<html>
+<head><title>$esc_title</title></head>
+<body><pre>
+EOF
+
+while (<STDIN>) {
+    s#(.*?)(https?://\S+)?#
+        encode_entities($1) .
+        (defined($2) ? ("<a href=\"" . encode_entities($2) . "\">" .
+                        encode_entities($2) .
+                        "</a>")
+                     : "")
+     #ge;
+    print
+}
+
+print <<EOF;
+</pre></body>
+</html>
+EOF
