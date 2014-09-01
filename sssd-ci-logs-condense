@@ -47,7 +47,6 @@ declare -r JOB_SFX="job/$((JOB / 100))/$((JOB % 100))"
 declare -r JOB_DIR="$DIR_PFX$JOB_SFX"
 declare -r JOB_URL="$URL_PFX$JOB_SFX"
 declare -r JOB_SUMMARY_FILE="$JOB_DIR/summary.html"
-declare -r JOB_SUMMARY_URL="$JOB_URL/summary.html"
 
 {
     declare host_name
@@ -87,5 +86,5 @@ EOF
                "$host_label" "$host_name" "$host_result" "$host_summary_url"
         host_label=""
     done
-    printf '%-27s %-7s %s\n' "Overall:" "$result" "$JOB_SUMMARY_URL"
+    printf '%-27s %-7s\n' "Overall:" "$result"
 } | tee >(sssd-ci-logs-tohtml >|"$JOB_SUMMARY_FILE")
