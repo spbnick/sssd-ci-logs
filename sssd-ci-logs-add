@@ -3,6 +3,8 @@
 set -e -u -o pipefail -o noclobber
 shopt -s shift_verbose
 
+declare -r ROOT="${SSSD_CI_LOGS_ROOT-/srv/ci/logs}"
+
 declare -r HASH="$1"; shift
 declare -r JOB="$1";    shift
 declare -r HOST="$1";   shift
@@ -24,8 +26,8 @@ fi
 
 declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
 declare -r SFX="commit/${HASH:0:2}/${HASH:2}"
-declare -r JOB_DIR="/srv/ci/logs/$JOB_SFX"
-declare -r DIR="/srv/ci/logs/$SFX"
+declare -r JOB_DIR="$ROOT/$JOB_SFX"
+declare -r DIR="$ROOT/$SFX"
 declare -r JOB_LINK="../../../$JOB_SFX"
 declare -r HOST_DIR="$JOB_DIR/$HOST"
 

@@ -3,6 +3,8 @@
 set -e -u -o pipefail -o noclobber
 shopt -s shift_verbose
 
+declare -r ROOT="${SSSD_CI_LOGS_ROOT-/srv/ci/logs}"
+
 declare -r HASH="$1";           shift
 declare -r SUBJECT="$1";        shift
 declare -r JOB="$1";            shift
@@ -42,9 +44,8 @@ if [[ $URL_PFX == *[[:cntrl:]]* ]]; then
     exit 1
 fi
 
-declare -r DIR_PFX="/srv/ci/logs/"
 declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
-declare -r JOB_DIR="$DIR_PFX$JOB_SFX"
+declare -r JOB_DIR="$ROOT/$JOB_SFX"
 declare -r JOB_URL="$URL_PFX$JOB_SFX"
 declare -r JOB_SUMMARY_TXT="$JOB_DIR/summary.txt"
 declare -r JOB_SUMMARY_HTML="$JOB_DIR/summary.html"
