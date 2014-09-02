@@ -25,13 +25,13 @@ if ! [[ $HOST =~ ^[a-z0-9_-]+$ ]]; then
 fi
 
 declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
-declare -r SFX="commit/${HASH:0:2}/${HASH:2}"
+declare -r COMMIT_SFX="commit/${HASH:0:2}/${HASH:2}"
 declare -r JOB_DIR="$ROOT/$JOB_SFX"
-declare -r DIR="$ROOT/$SFX"
+declare -r COMMIT_DIR="$ROOT/$COMMIT_SFX"
 declare -r JOB_LINK="../../../$JOB_SFX"
 declare -r HOST_DIR="$JOB_DIR/$HOST"
 
 mkdir -p "$HOST_DIR"
-mkdir -p "$DIR"
-ln -snf "$JOB_LINK" "$DIR/$JOB"
+mkdir -p "$COMMIT_DIR"
+ln -snf "$JOB_LINK" "$COMMIT_DIR/$JOB"
 tar xzmC "$HOST_DIR"
