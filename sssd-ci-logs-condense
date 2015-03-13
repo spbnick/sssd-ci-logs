@@ -11,6 +11,11 @@ declare -r JOB="$1";            shift
 declare -r TESTS="$1";          shift
 declare -r HOST_LIST="$1";      shift
 declare -r URL_PFX="$1";        shift
+declare BRANCH=""
+if (($# > 0)); then
+    BRANCH="$1";    shift
+fi
+declare -r BRANCH
 
 if ! [[ $HASH =~ ^[0-9a-f]{40}$ ]]; then
     echo "Invalid commit hash: $HASH" >&2
@@ -44,12 +49,21 @@ if [[ $URL_PFX == *[[:cntrl:]]* ]]; then
     exit 1
 fi
 
+if [[ $BRANCH == *[[:cntrl:]]* ]]; then
+    printf "Branch name contains control characters: %q\n" \
+           "$BRANCH" >&2
+    exit 1
+fi
+
+
 declare -r JOB_SFX=`printf 'job/%u/%02u' $((JOB/100)) $((JOB%100))`
 declare -r JOB_DIR="$ROOT/$JOB_SFX"
 declare -r JOB_URL="$URL_PFX$JOB_SFX"
 declare -r JOB_SUMMARY_TXT="$JOB_DIR/summary.txt"
 declare -r JOB_SUMMARY_HTML="$JOB_DIR/summary.html"
 
+declare var
+declare title
 declare host_name
 declare host_dir
 declare host_url
@@ -61,12 +75,14 @@ declare host_title
 declare host_label="Hosts:"
 declare result="PASSED"
 
-cat >|"$JOB_SUMMARY_TXT" <<EOF
-Subject:    $SUBJECT
-Hash:       $HASH
-Job:        $JOB
-Tests:      $TESTS
-EOF
+>|"$JOB_SUMMARY_TXT"
+for var in SUBJECT HASH BRANCH JOB TESTS; do
+    if [ -n "${!var}" ]; then
+        title=${var:1}
+        title=${var:0:1}${title,,}
+        printf "%-12s%s\n" "$title:" "${!var}" >>"$JOB_SUMMARY_TXT"
+    fi
+done
 
 # NOTE: HOST_LIST is validated above
 for host_name in $HOST_LIST; do
