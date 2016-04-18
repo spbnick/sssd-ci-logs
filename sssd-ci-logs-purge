@@ -1,0 +1,40 @@
+#!/bin/bash
+
+set -e -u -o pipefail -o noclobber
+shopt -s shift_verbose
+
+declare -r ROOT="${SSSD_CI_LOGS_ROOT-/srv/ci/logs}"
+declare -r JOBS="$ROOT/job"
+
+if (( $# != 2 )); then
+    echo "Usage `basename $0` USED_LOW_PERCENTS USED_HIGH_PERCENTS" >&2
+    exit 1
+fi
+
+declare -r USED_LOW_PERCENTS="$1";  shift
+declare -r USED_HIGH_PERCENTS="$1"; shift
+
+function jobs_use()
+{
+    declare max_used_percents="$1"
+    declare used_percents
+    used_percents=`df --sync --output=pcent "$JOBS" | sed -ne '2 s/%//p'`
+    (( $used_percents > $max_used_percents ))
+}
+
+if ! jobs_use "$USED_HIGH_PERCENTS"; then
+    exit 0
+fi
+
+cd "$JOBS"
+ls -d */* |
+    sed -ne 's#^\([0-9]\+\)/\([0-9]\+\)$#\1\2 \1/\2#p' |
+    sort -n |
+    {
+        while jobs_use "$USED_LOW_PERCENTS" && read -r id dir; do
+            echo "Removing job #$id directory $dir"
+            rm -R "$dir"
+        done
+        # Consume the rest of ls output so it succeeds
+        cat >/dev/null
+    }
